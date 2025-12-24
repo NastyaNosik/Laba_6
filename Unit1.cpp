@@ -4,11 +4,14 @@
 #pragma hdrstop
 
 #include "Unit1.h"
+#include "Unit2.h"   // GameForm / TGameForm
+
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 
 TForm1 *Form1;
 
+// SQLite — подключаем как C-библиотеку
 extern "C" {
 #include "sqlite3.h"
 }
@@ -18,7 +21,7 @@ extern "C" {
 __fastcall TForm1::TForm1(TComponent* Owner)
     : TForm(Owner), db(nullptr)
 {
-    // Гарантируем, что инициализация/закрытие вызовутся даже если Events не назначены в DFM
+    // гарантируем события даже если в DFM не назначены
     this->OnCreate = FormCreate;
     this->OnDestroy = FormDestroy;
 }
@@ -29,7 +32,7 @@ static void ExecSQL(sqlite3* db, const char* sql)
     int rc = sqlite3_exec(db, sql, nullptr, nullptr, &errMsg);
     if (rc != SQLITE_OK)
     {
-        String msg = String("SQLite error: ") + (errMsg ? errMsg : "unknown");
+        String msg = String("SQLite exec error: ") + (errMsg ? errMsg : "unknown");
         sqlite3_free(errMsg);
         throw Exception(msg);
     }
@@ -37,14 +40,11 @@ static void ExecSQL(sqlite3* db, const char* sql)
 
 void __fastcall TForm1::FormCreate(TObject *Sender)
 {
-    // Открываем/создаём БД рядом с exe
     int rc = sqlite3_open("game2048.db", &db);
     if (rc != SQLITE_OK || db == nullptr)
-    {
         throw Exception("Cannot open game2048.db");
-    }
 
-    // Создаём таблицы
+    // Таблицы
     ExecSQL(db,
         "CREATE TABLE IF NOT EXISTS users ("
         " id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -82,14 +82,13 @@ static bool RegisterUser(sqlite3* db, const String& login, const String& passwor
         return false;
     }
 
-    AnsiString l = AnsiString(login);
-    AnsiString p = AnsiString(password);
+    AnsiString l(login);
+    AnsiString p(password);
 
     sqlite3_bind_text(stmt, 1, l.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, p.c_str(), -1, SQLITE_TRANSIENT);
 
     rc = sqlite3_step(stmt);
-
     if (rc != SQLITE_DONE)
     {
         ShowMessage(String("SQLite insert error: ") + sqlite3_errmsg(db));
@@ -101,16 +100,20 @@ static bool RegisterUser(sqlite3* db, const String& login, const String& passwor
     return true;
 }
 
-
 static int LoginUser(sqlite3* db, const String& login, const String& password)
 {
     const char* sql = "SELECT id FROM users WHERE login = ? AND password = ?;";
     sqlite3_stmt* stmt = nullptr;
 
-    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) return -1;
+    int rc = sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr);
+    if (rc != SQLITE_OK)
+    {
+        ShowMessage(String("SQLite prepare error: ") + sqlite3_errmsg(db));
+        return -1;
+    }
 
-    AnsiString l = AnsiString(login);
-    AnsiString p = AnsiString(password);
+    AnsiString l(login);
+    AnsiString p(password);
 
     sqlite3_bind_text(stmt, 1, l.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, p.c_str(), -1, SQLITE_TRANSIENT);
@@ -123,20 +126,25 @@ static int LoginUser(sqlite3* db, const String& login, const String& password)
     return userId;
 }
 
-void __fastcall TForm1::ButtonRegisterClick(TObject *Sender)
+static bool EnsureDbOpen(sqlite3*& db)
 {
-    if (!db)
-{
-    ShowMessage("База не открыта. Проверьте FormCreate/OnCreate. Пытаюсь открыть...");
+    if (db) return true;
+
     int rc = sqlite3_open("game2048.db", &db);
     if (rc != SQLITE_OK || !db)
     {
-        ShowMessage(String("Cannot open DB: ") + (db ? sqlite3_errmsg(db) : "db=null"));
-        return;
+        ShowMessage("Cannot open DB");
+        return false;
     }
+    return true;
 }
+
+void __fastcall TForm1::ButtonRegisterClick(TObject *Sender)
+{
+    if (!EnsureDbOpen(db)) return;
+
     String login = EditUsername->Text.Trim();
-	String pass  = EditPassword->Text;
+    String pass  = EditPassword->Text;
 
     if (login.IsEmpty() || pass.IsEmpty())
     {
@@ -152,16 +160,7 @@ void __fastcall TForm1::ButtonRegisterClick(TObject *Sender)
 
 void __fastcall TForm1::ButtonLoginClick(TObject *Sender)
 {
-    if (!db)
-{
-    ShowMessage("База не открыта. Проверьте FormCreate/OnCreate. Пытаюсь открыть...");
-    int rc = sqlite3_open("game2048.db", &db);
-    if (rc != SQLITE_OK || !db)
-    {
-        ShowMessage(String("Cannot open DB: ") + (db ? sqlite3_errmsg(db) : "db=null"));
-        return;
-    }
-}
+    if (!EnsureDbOpen(db)) return;
 
     String login = EditUsername->Text.Trim();
     String pass  = EditPassword->Text;
@@ -173,10 +172,19 @@ void __fastcall TForm1::ButtonLoginClick(TObject *Sender)
     }
 
     int userId = LoginUser(db, login, pass);
+
     if (userId >= 0)
-        ShowMessage("Вход успешен. user_id = " + String(userId));
-    else
-        ShowMessage("Неверный логин или пароль.");
+    {
+        // создаём форму игры, если ещё не создана
+        if (GameForm == nullptr)
+            Application->CreateForm(__classid(TGameForm), &GameForm);
+
+        GameForm->StartGame(userId);
+        this->Hide();
+        return;
+    }
+
+    ShowMessage("Неверный логин или пароль.");
 }
 
 //---------------------------------------------------------------------------

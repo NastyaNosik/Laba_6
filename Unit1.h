@@ -3,10 +3,15 @@
 #ifndef Unit1H
 #define Unit1H
 //---------------------------------------------------------------------------
+
 #include <System.Classes.hpp>
 #include <Vcl.Controls.hpp>
 #include <Vcl.StdCtrls.hpp>
 #include <Vcl.Forms.hpp>
+
+// forward declaration, чтобы не было циклических include
+class TGameForm;
+
 //---------------------------------------------------------------------------
 
 class TForm1 : public TForm
@@ -30,6 +35,7 @@ public:
 private:
     struct sqlite3* db; // SQLite connection
 };
+
 //---------------------------------------------------------------------------
 
 extern PACKAGE TForm1 *Form1;
