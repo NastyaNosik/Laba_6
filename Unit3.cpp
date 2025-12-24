@@ -5,6 +5,7 @@
 
 #include "Unit3.h"
 #include "Unit2.h"   // GameForm
+#include "Unit4.h"
 
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -84,8 +85,14 @@ void __fastcall TForm3::ButtonPlayClick(TObject *Sender)
 
 void __fastcall TForm3::ButtonTop10Click(TObject *Sender)
 {
-    ShowMessage("Top-10 сделаем следующим шагом.");
+    if (!Form4)
+        Application->CreateForm(__classid(TForm4), &Form4);
+
+    Form4->RefreshTop10();
+    Form4->ShowModal();
 }
+
+
 
 void __fastcall TForm3::ButtonExitClick(TObject *Sender)
 {
