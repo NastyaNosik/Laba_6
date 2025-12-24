@@ -5,6 +5,7 @@
 
 #include "Unit1.h"
 #include "Unit2.h"   // GameForm / TGameForm
+#include "Unit3.h"   // Form3 / TForm3 (Menu)
 
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -175,11 +176,14 @@ void __fastcall TForm1::ButtonLoginClick(TObject *Sender)
 
     if (userId >= 0)
     {
-        // создаём форму игры, если ещё не создана
-        if (GameForm == nullptr)
-            Application->CreateForm(__classid(TGameForm), &GameForm);
+        // создаём меню (Form3), если ещё не создано
+        if (Form3 == nullptr)
+            Application->CreateForm(__classid(TForm3), &Form3);
 
-        GameForm->StartGame(userId);
+        // пока bestScore = 0 (подтянем из БД следующим шагом)
+        Form3->Init(userId, login, 0);
+
+        Form3->Show();
         this->Hide();
         return;
     }

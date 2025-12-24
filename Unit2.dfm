@@ -2,7 +2,7 @@ object GameForm: TGameForm
   Left = 0
   Top = 0
   Caption = '2048'
-  ClientHeight = 350
+  ClientHeight = 380
   ClientWidth = 350
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -14,28 +14,36 @@ object GameForm: TGameForm
   OnCreate = FormCreate
   OnKeyDown = FormKeyDown
   TextHeight = 13
-  object LabelScore: TLabel
+  object PanelTop: TPanel
     Left = 0
     Top = 0
     Width = 350
-    Height = 16
+    Height = 40
     Align = alTop
-    Alignment = taCenter
-    Caption = 'Score: 0'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
-    Font.Height = -13
-    Font.Name = 'Tahoma'
-    Font.Style = [fsBold]
-    ParentFont = False
-    Layout = tlCenter
-    ExplicitWidth = 54
+    BevelOuter = bvNone
+    TabOrder = 0
+    object LabelScore: TLabel
+      Left = 8
+      Top = 12
+      Width = 40
+      Height = 13
+      Caption = 'Score: 0'
+    end
+    object ButtonMenu: TButton
+      Left = 270
+      Top = 7
+      Width = 70
+      Height = 25
+      Caption = 'Menu'
+      TabOrder = 0
+      OnClick = ButtonMenuClick
+    end
   end
   object Grid: TStringGrid
     Left = 0
-    Top = 16
+    Top = 40
     Width = 350
-    Height = 334
+    Height = 340
     Align = alClient
     ColCount = 4
     DefaultColWidth = 80
@@ -45,6 +53,6 @@ object GameForm: TGameForm
     FixedRows = 0
     Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine]
     ScrollBars = ssNone
-    TabOrder = 0
+    TabOrder = 1
   end
 end

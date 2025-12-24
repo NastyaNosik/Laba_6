@@ -27,7 +27,7 @@ object Form1: TForm1
   end
   object EditUsername: TEdit
     Left = 80
-    Top = 60
+    Top = 59
     Width = 240
     Height = 21
     TabOrder = 0
